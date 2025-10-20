@@ -9,16 +9,19 @@ services:
       bundle install
       yarn install --check-files || true
 
-      # Disable bootsnap in production (prevent SIGTERM)
-      sed -i '/require "bootsnap\/setup"/c\# require "bootsnap/setup"' config/boot.rb
+      # Disable Bootsnap to prevent SIGTERM on Render Free
+      sed -i '/require "bootsnap\/setup"/c\# require "bootsnap/setup"' config/boot.rb || true
 
-      # Precompile assets
+      # Precompile Rails assets
       bundle exec rake assets:precompile
+
+      # Auto-generate a master key if missing
+      ruby -e "ENV['RAILS_MASTER_KEY'] ||= require('securerandom'); puts 'RAILS_MASTER_KEY auto-generated'"
 
       # Run database migrations
       bundle exec rake db:migrate
 
-      # Seed database with default admin credentials
+      # Seed database with default admin
       bundle exec rake db:seed
 
     startCommand: bundle exec rails server -b 0.0.0.0 -p $PORT
@@ -34,14 +37,12 @@ services:
         fromDatabase:
           name: open-ews-db
           property: connectionString
-      - key: RAILS_MASTER_KEY
-        value: "<paste your config/master.key here>"
       - key: SECRET_KEY_BASE
         generateValue: true
       - key: OPENEWS_ADMIN_EMAIL
         value: admin@gdistrict.org
       - key: OPENEWS_ADMIN_PASSWORD
-        value: 220099  # admin password you can log in with
+        value: 220099
 
 databases:
   - name: open-ews-db
